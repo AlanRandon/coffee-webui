@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coffee Machine UI</title>
+    <meta name="description" content="description" />
+    <style>
+      {{ include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/target/coffee-webui/style.css")) | safe }}
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    {% block content %}{% endblock %}
+    <script>
+      {{ include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/target/coffee-webui/main.js")) | safe }}
+    </script>
+  </body>
+</html>
+
+{#
+  vim: shiftwidth=2
+#}

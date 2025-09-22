@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-wps-purple: oklch(0.3662 0.0903 299.33);
+  --color-wps-purple-300: oklch(0.6588 0.0903 299.33);
+  --color-wps-purple-800: oklch(0.2088 0.0765 299.33);
+}
+
+@utility btn {
+  @apply bg-wps-purple text-white hover:opacity-80 focus:opacity-100 focus:bg-wps-purple-800 focus:scale-90 font-bold rounded-sm px-4 py-2 transition-all;
+}
+
+:root,
+body {
+  @apply min-h-full grid bg-wps-purple text-gray-50;
+}
