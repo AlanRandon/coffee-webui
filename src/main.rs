@@ -13,10 +13,15 @@ fn response(template: impl Template, status: StatusCode) -> poem::Response {
     }
 }
 
+struct Product {
+    id: i64,
+    name: String,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct Order {
-    created: chrono::NaiveDateTime,
     id: i64,
+    created: chrono::NaiveDateTime,
 }
 
 #[derive(Template)]
@@ -27,6 +32,7 @@ struct Error;
 #[template(path = "index.html")]
 struct Index {
     orders: Vec<Order>,
+    products: Vec<Product>,
 }
 
 #[derive(Template)]
@@ -47,14 +53,34 @@ async fn index(pool: poem::web::Data<&Arc<SqlitePool>>) -> poem::Response {
         return response(Error, StatusCode::INTERNAL_SERVER_ERROR);
     };
 
-    response(Index { orders }, StatusCode::OK)
+    let Ok(products) = sqlx::query_as!(Product, "SELECT id, name FROM product")
+        .fetch_all(pool.as_ref())
+        .await
+    else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+
+    response(Index { orders, products }, StatusCode::OK)
+}
+
+#[derive(Deserialize)]
+struct CreateRequest {
+    product: i64,
 }
 
 #[poem::handler]
-async fn create_order(pool: poem::web::Data<&Arc<SqlitePool>>) -> poem::Response {
-    let Ok(_) = sqlx::query!("INSERT INTO coffee_order (id) VALUES (NULL)")
-        .execute(pool.as_ref())
-        .await
+async fn create_order(
+    pool: poem::web::Data<&Arc<SqlitePool>>,
+    query: poem::web::Query<CreateRequest>,
+) -> poem::Response {
+    let Ok(_) = sqlx::query!(
+        "INSERT INTO coffee_order (id, product) VALUES (NULL, ?)",
+        query.product
+    )
+    .execute(pool.as_ref())
+    .await
     else {
         return poem::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
@@ -73,7 +99,7 @@ async fn create_order(pool: poem::web::Data<&Arc<SqlitePool>>) -> poem::Response
             .body(());
     };
 
-    response(OrderTable { orders }, StatusCode::OK)
+    response(OrderTable { orders, }, StatusCode::OK)
 }
 
 #[derive(Deserialize, Debug)]

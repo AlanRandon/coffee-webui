@@ -1,54 +1,58 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<main class="p-4 min-h-full flex flex-col gap-4">
+  <h1 class="text-2xl font-bold">Coffee Machine Order Logger</h1>
 
-{% block content %}
-  <main class="p-4 min-h-full flex flex-col gap-4">
-    <h1 class="text-2xl font-bold">Coffee Machine Order Logger</h1>
-
-    <form
-      class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2 grid p-4"
-      hx-post="/hx/create_order"
-      hx-target="tbody"
-      hx-swap="outerHTML"
-    >
-      <div class="flex justify-end">
-	<button
-	    type="submit"
-	    class="btn"
-	>
-	  Create Order
-	</button>
+  <form
+    class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2 grid p-4"
+    hx-post="/hx/create_order"
+    hx-target="tbody"
+    hx-swap="outerHTML"
+  >
+    <fieldset>
+      {% for product in products %}
+      <div>
+        <input
+          type="radio"
+          name="product"
+          value="{{ product.id }}"
+          id="product-{{ product.id }}"
+        />
+        <label for="product-{{ product.id }}">{{ product.name }}</label>
       </div>
-    </form>
+      {% endfor %}
+    </fieldset>
+    <button type="submit" class="btn">Create Order</button>
+  </form>
 
-    <table class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2">
-	<thead>
-	  <tr>
-	    <th class="p-2">Time Created</th>
-	    <th class="p-2">Actions</th>
-	  </tr>
-	</thead>
-      {% block order_table %}
-	<tbody>
-	  {% for order in orders %}
-	    <tr class="odd:bg-gray-400 p-2 border-t-2 border-gray-900">
-	      <td class="p-2">{{ order.created.to_string() }}</td>
-	      <td class="p-2 flex gap-4 justify-end">
-		<button
-		  hx-delete="/hx/delete_order"
-		  hx-target="closest tr"
-		  hx-swap="outerHTML"
-		  hx-vals="{&quot;id&quot;:{{ order.id }}}"
-		  class="btn"
-		>Remove</button>
-	      </td>
-	    </tr>
-	  {% endfor %}
-	</tbody>
-      {% endblock %}
-    </table>
-  </main>
-{% endblock %}
-
-{#
-  vim: shiftwidth=2
-#}
+  <table
+    class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2"
+  >
+    <thead>
+      <tr>
+        <th class="p-2">Time Created</th>
+        <th class="p-2">Actions</th>
+      </tr>
+    </thead>
+    {% block order_table %}
+    <tbody>
+      {% for order in orders %}
+      <tr class="odd:bg-gray-400 p-2 border-t-2 border-gray-900">
+        <td class="p-2">{{ order.created.to_string() }}</td>
+        <td class="p-2 flex gap-4 justify-end">
+          <button
+            hx-delete="/hx/delete_order"
+            hx-target="closest tr"
+            hx-swap="outerHTML"
+            hx-vals='{"id":{{ order.id }}}'
+            class="btn"
+          >
+            Remove
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    {% endblock %}
+  </table>
+</main>
+{% endblock %} {# vim: ft=html #}
