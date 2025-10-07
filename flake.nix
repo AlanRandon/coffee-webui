@@ -17,6 +17,7 @@
         { pkgs, system, ... }:
 
         let
+          # TODO: use `combine` to add an `aarch` target
           toolchain = fenix.packages."${system}".complete.toolchain;
         in
         {

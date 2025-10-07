@@ -10,3 +10,5 @@ CREATE TABLE product (
 	name TEXT NOT NULL
 );
 
+INSERT INTO product (id, name) VALUES (NULL, "Pumpkin Spice Latte");
+INSERT INTO product (id, name) VALUES (NULL, "Yummy Blood");

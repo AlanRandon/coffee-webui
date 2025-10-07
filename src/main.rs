@@ -73,11 +73,11 @@ struct CreateRequest {
 #[poem::handler]
 async fn create_order(
     pool: poem::web::Data<&Arc<SqlitePool>>,
-    query: poem::web::Query<CreateRequest>,
+    form: poem::web::Form<CreateRequest>,
 ) -> poem::Response {
     let Ok(_) = sqlx::query!(
         "INSERT INTO coffee_order (id, product) VALUES (NULL, ?)",
-        query.product
+        form.product
     )
     .execute(pool.as_ref())
     .await
@@ -99,7 +99,7 @@ async fn create_order(
             .body(());
     };
 
-    response(OrderTable { orders, }, StatusCode::OK)
+    response(OrderTable { orders }, StatusCode::OK)
 }
 
 #[derive(Deserialize, Debug)]

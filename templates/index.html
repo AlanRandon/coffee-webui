@@ -3,19 +3,24 @@
   <h1 class="text-2xl font-bold">Coffee Machine Order Logger</h1>
 
   <form
-    class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2 grid p-4"
+    class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2 grid gap-4 p-4"
     hx-post="/hx/create_order"
     hx-target="tbody"
     hx-swap="outerHTML"
+    <!-- TODO: add confimation popup -->
+    hx-on::after-request="this.reset()"
   >
     <fieldset>
+      <legend class="font-bold">Product</legend>
       {% for product in products %}
-      <div>
+      <div class="flex items-center gap-4">
         <input
           type="radio"
           name="product"
           value="{{ product.id }}"
           id="product-{{ product.id }}"
+          class="h-5 w-5 cursor-pointer appearance-none rounded-sm border-2 border-gray-900 checked:bg-wps-purple"
+          required
         />
         <label for="product-{{ product.id }}">{{ product.name }}</label>
       </div>
