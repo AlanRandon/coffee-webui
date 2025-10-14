@@ -17,33 +17,30 @@
         { pkgs, system, ... }:
 
         let
-          # TODO: use `combine` to add an `aarch` target
-          toolchain = fenix.packages."${system}".complete.toolchain;
+          rust = fenix.packages.${system};
+          toolchain =
+            with rust;
+            combine [
+              stable.toolchain
+              targets."aarch64-unknown-linux-gnu".stable.rust-std
+            ];
         in
         {
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
-            overlays = [
-              (
-                _: super:
-                let
-                  pkgs = fenix.inputs.nixpkgs.legacyPackages.${super.system};
-                in
-                fenix.overlays.default pkgs pkgs
-              )
-            ];
           };
 
           devShells.default = pkgs.mkShell {
             nativeBuildInputs = [ toolchain ];
 
             packages = [
+              rust.rust-analyzer
               pkgs.cargo-shuttle
-              pkgs.rust-analyzer-nightly
               pkgs.tailwindcss_4
               pkgs.esbuild
               pkgs.sqlx-cli
               pkgs.sqlite
+              pkgs.djlint
             ];
 
             DATABASE_URL = "sqlite:dev.db";

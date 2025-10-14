@@ -1,63 +1,69 @@
-{% extends "base.html" %} {% block content %}
-<main class="p-4 min-h-full flex flex-col gap-4">
-  <h1 class="text-2xl font-bold">Coffee Machine Order Logger</h1>
-
-  <form
-    class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2 grid gap-4 p-4"
-    hx-post="/hx/create_order"
-    hx-target="tbody"
-    hx-swap="outerHTML"
-    <!-- TODO: add confimation popup -->
-    hx-on::after-request="this.reset()"
-  >
-    <fieldset>
-      <legend class="font-bold">Product</legend>
-      {% for product in products %}
-      <div class="flex items-center gap-4">
-        <input
-          type="radio"
-          name="product"
-          value="{{ product.id }}"
-          id="product-{{ product.id }}"
-          class="h-5 w-5 cursor-pointer appearance-none rounded-sm border-2 border-gray-900 checked:bg-wps-purple"
-          required
-        />
-        <label for="product-{{ product.id }}">{{ product.name }}</label>
-      </div>
-      {% endfor %}
-    </fieldset>
-    <button type="submit" class="btn">Create Order</button>
-  </form>
-
-  <table
-    class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2"
-  >
-    <thead>
-      <tr>
-        <th class="p-2">Time Created</th>
-        <th class="p-2">Actions</th>
-      </tr>
-    </thead>
-    {% block order_table %}
-    <tbody>
-      {% for order in orders %}
-      <tr class="odd:bg-gray-400 p-2 border-t-2 border-gray-900">
-        <td class="p-2">{{ order.created.to_string() }}</td>
-        <td class="p-2 flex gap-4 justify-end">
-          <button
-            hx-delete="/hx/delete_order"
-            hx-target="closest tr"
-            hx-swap="outerHTML"
-            hx-vals='{"id":{{ order.id }}}'
-            class="btn"
-          >
-            Remove
-          </button>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    {% endblock %}
-  </table>
-</main>
-{% endblock %} {# vim: ft=html #}
+{% extends "base.html" %}
+{% block content %}
+    <main class="p-4 min-h-full flex flex-col gap-4">
+        <h1 class="text-2xl font-bold">Coffee Machine Order Logger</h1>
+        <!-- TODO: add confimation popup -->
+        <div class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2 grid gap-4 p-4">
+            <form hx-post="/hx/create_order"
+                  hx-target="tbody"
+                  hx-swap="outerHTML"
+                  hx-on::after-request="this.reset()">
+                <fieldset>
+                    <legend class="font-bold">Product</legend>
+                    {% for product in products %}
+                        <div class="flex items-center gap-4">
+                            <input type="radio"
+                                   name="product"
+                                   value="{{ product.id }}"
+                                   id="product-{{ product.id }}"
+                                   class="h-5 w-5 cursor-pointer appearance-none rounded-full border-2 border-gray-900 checked:bg-wps-purple"
+                                   required />
+                            <label for="product-{{ product.id }}">{{ product.name }}</label>
+                        </div>
+                    {% endfor %}
+                </fieldset>
+                <button type="submit" class="btn">Create Order</button>
+            </form>
+            <form class="border grid">
+                <h2 class="font-bold">Create Product</h2>
+                <label for="new-product-title">New Product</label>
+                <input type="text"
+                       name="title"
+                       id="new-product-title"
+                       placeholder="Pumpkin Spice Latte">
+                <label for="price">Price</label>
+                <div class="flex flex-row">
+                    £
+                    <input type="number" placeholder="0.67" min="0" step="0.01">
+                </div>
+                <button type="submit" class="btn">Create</button>
+            </form>
+        </div>
+        <table class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2">
+            <thead>
+                <tr>
+                    <th class="p-2">Time Created</th>
+                    <th class="p-2">Product Name</th>
+                    <th class="p-2">Actions</th>
+                </tr>
+            </thead>
+            {% block order_table %}
+                <tbody>
+                    {% for order in orders %}
+                        <tr class="odd:bg-gray-400 p-2 border-t-2 border-gray-900 rounded-sm">
+                            <td class="p-2">{{ order.created.to_string() }}</td>
+                            <td class="p-2">{{ order.product_name }}</td>
+                            <td class="p-2 flex gap-4 justify-end">
+                                <button hx-delete="/hx/delete_order"
+                                        hx-target="closest tr"
+                                        hx-swap="outerHTML"
+                                        hx-vals='{"id":{{ order.id }}}'
+                                        class="btn">Remove</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            {% endblock %}
+        </table>
+    </main>
+{% endblock %}

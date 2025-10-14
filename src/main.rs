@@ -19,9 +19,10 @@ struct Product {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct Order {
+struct OrderRow {
     id: i64,
     created: chrono::NaiveDateTime,
+    product_name: String,
 }
 
 #[derive(Template)]
@@ -31,25 +32,28 @@ struct Error;
 #[derive(Template)]
 #[template(path = "index.html")]
 struct Index {
-    orders: Vec<Order>,
+    orders: Vec<OrderRow>,
     products: Vec<Product>,
 }
 
 #[derive(Template)]
 #[template(path = "index.html", block = "order_table")]
 struct OrderTable {
-    orders: Vec<Order>,
+    orders: Vec<OrderRow>,
+}
+
+async fn get_orders(pool: &SqlitePool) -> Result<Vec<OrderRow>, impl std::error::Error> {
+    sqlx::query_as!(
+        OrderRow,
+        "SELECT coffee_order.id as id, created, product.name as product_name FROM coffee_order INNER JOIN product ON coffee_order.product = product.id ORDER BY created DESC"
+    )
+    .fetch_all(pool)
+    .await
 }
 
 #[poem::handler]
 async fn index(pool: poem::web::Data<&Arc<SqlitePool>>) -> poem::Response {
-    let Ok(orders) = sqlx::query_as!(
-        Order,
-        "SELECT id, created FROM coffee_order ORDER BY created DESC"
-    )
-    .fetch_all(pool.as_ref())
-    .await
-    else {
+    let Ok(orders) = get_orders(&pool).await else {
         return response(Error, StatusCode::INTERNAL_SERVER_ERROR);
     };
 
@@ -76,7 +80,8 @@ async fn create_order(
     form: poem::web::Form<CreateRequest>,
 ) -> poem::Response {
     let Ok(_) = sqlx::query!(
-        "INSERT INTO coffee_order (id, product) VALUES (NULL, ?)",
+        "INSERT INTO coffee_order (id, product, price) VALUES (NULL, ?, (SELECT current_price FROM product WHERE id = ?))",
+        form.product,
         form.product
     )
     .execute(pool.as_ref())
@@ -87,13 +92,7 @@ async fn create_order(
             .body(());
     };
 
-    let Ok(orders) = sqlx::query_as!(
-        Order,
-        "SELECT id, created FROM coffee_order ORDER BY created DESC"
-    )
-    .fetch_all(pool.as_ref())
-    .await
-    else {
+    let Ok(orders) = get_orders(&pool).await else {
         return poem::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(());
@@ -124,6 +123,39 @@ async fn delete_order(
     poem::Response::builder().status(StatusCode::OK).body(())
 }
 
+#[derive(Deserialize)]
+struct CreateProductRequest {
+    name: String,
+    price: f32,
+}
+
+#[poem::handler]
+async fn create_product(
+    pool: poem::web::Data<&Arc<SqlitePool>>,
+    form: poem::web::Form<CreateProductRequest>,
+) -> poem::Response {
+    let Ok(_) = sqlx::query!(
+        "INSERT INTO product (id, name, current_price) VALUES (NULL, ?, ?)",
+        form.name,
+        form.price
+    )
+    .execute(pool.as_ref())
+    .await
+    else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+
+    let Ok(orders) = get_orders(&pool).await else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+
+    response(OrderTable { orders }, StatusCode::OK)
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let database_url = std::env::var("DATABASE_URL")?;
@@ -134,9 +166,10 @@ async fn main() -> anyhow::Result<()> {
     let app = poem::Route::new()
         .at("/", poem::get(index))
         .at("/hx/create_order", poem::post(create_order))
+        .at("/hx/create_product", poem::post(create_product))
         .at("/hx/delete_order", poem::delete(delete_order))
         .with(AddData::new(pool));
 
-    let listener = poem::listener::TcpListener::bind("127.0.0.1:3000");
+    let listener = poem::listener::TcpListener::bind("127.0.0.1:8000");
     Ok(poem::Server::new(listener).run(app).await?)
 }
