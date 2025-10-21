@@ -16,6 +16,8 @@ fn response(template: impl Template, status: StatusCode) -> poem::Response {
 struct Product {
     id: i64,
     name: String,
+    current_price: i64,
+    order_count: i64,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -36,12 +38,6 @@ struct Index {
     products: Vec<Product>,
 }
 
-#[derive(Template)]
-#[template(path = "index.html", block = "order_table")]
-struct OrderTable {
-    orders: Vec<OrderRow>,
-}
-
 async fn get_orders(pool: &SqlitePool) -> Result<Vec<OrderRow>, impl std::error::Error> {
     sqlx::query_as!(
         OrderRow,
@@ -51,22 +47,31 @@ async fn get_orders(pool: &SqlitePool) -> Result<Vec<OrderRow>, impl std::error:
     .await
 }
 
+async fn get_products(pool: &SqlitePool) -> Result<Vec<Product>, impl std::error::Error> {
+    sqlx::query_as!(
+        Product,
+        "SELECT product.id, product.name, product.current_price, COUNT(coffee_order.id) AS order_count FROM product LEFT JOIN coffee_order ON coffee_order.product = product.id GROUP BY product.id"
+    )
+        .fetch_all(pool)
+        .await
+}
+
 #[poem::handler]
 async fn index(pool: poem::web::Data<&Arc<SqlitePool>>) -> poem::Response {
-    let Ok(orders) = get_orders(&pool).await else {
-        return response(Error, StatusCode::INTERNAL_SERVER_ERROR);
-    };
-
-    let Ok(products) = sqlx::query_as!(Product, "SELECT id, name FROM product")
-        .fetch_all(pool.as_ref())
-        .await
-    else {
+    let (Ok(orders), Ok(products)) = (get_orders(&pool).await, get_products(&pool).await) else {
         return poem::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(());
     };
 
     response(Index { orders, products }, StatusCode::OK)
+}
+
+#[derive(Template)]
+#[template(path = "index.html", block = "content")]
+struct IndexBody {
+    orders: Vec<OrderRow>,
+    products: Vec<Product>,
 }
 
 #[derive(Deserialize)]
@@ -92,26 +97,54 @@ async fn create_order(
             .body(());
     };
 
-    let Ok(orders) = get_orders(&pool).await else {
+    let (Ok(orders), Ok(products)) = (get_orders(&pool).await, get_products(&pool).await) else {
         return poem::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(());
     };
 
-    response(OrderTable { orders }, StatusCode::OK)
+    response(IndexBody { orders, products }, StatusCode::OK)
 }
 
 #[derive(Deserialize, Debug)]
-struct DeleteRequest {
+struct DeleteOrderRequest {
     id: i64,
 }
 
 #[poem::handler]
 async fn delete_order(
     pool: poem::web::Data<&Arc<SqlitePool>>,
-    query: poem::web::Query<DeleteRequest>,
+    query: poem::web::Query<DeleteOrderRequest>,
 ) -> poem::Response {
     let Ok(_) = sqlx::query!("DELETE FROM coffee_order WHERE id = (?)", query.id)
+        .execute(pool.as_ref())
+        .await
+    else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+
+    let (Ok(orders), Ok(products)) = (get_orders(&pool).await, get_products(&pool).await) else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+
+    response(IndexBody { orders, products }, StatusCode::OK)
+}
+
+#[derive(Deserialize, Debug)]
+struct DeleteProductRequest {
+    id: i64,
+}
+
+#[poem::handler]
+async fn delete_product(
+    pool: poem::web::Data<&Arc<SqlitePool>>,
+    query: poem::web::Query<DeleteProductRequest>,
+) -> poem::Response {
+    let Ok(_) = sqlx::query!("DELETE FROM product WHERE id = (?)", query.id)
         .execute(pool.as_ref())
         .await
     else {
@@ -149,7 +182,14 @@ where
             .ok_or_else(|| de::Error::custom("price too large"));
     }
 
-    price.parse::<u16>().map_err(de::Error::custom)
+    price
+        .parse::<u16>()
+        .map_err(de::Error::custom)
+        .and_then(|price| {
+            price
+                .checked_mul(100)
+                .ok_or_else(|| de::Error::custom("price too large"))
+        })
 }
 
 #[derive(Template)]
@@ -176,10 +216,7 @@ async fn create_product(
             .body(());
     };
 
-    let Ok(products) = sqlx::query_as!(Product, "SELECT id, name FROM product")
-        .fetch_all(pool.as_ref())
-        .await
-    else {
+    let Ok(products) = get_products(&pool).await else {
         return poem::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(());
@@ -198,6 +235,7 @@ async fn main() -> anyhow::Result<()> {
     let app = poem::Route::new()
         .at("/", poem::get(index))
         .at("/hx/create_order", poem::post(create_order))
+        .at("/hx/delete_product", poem::delete(delete_product))
         .at("/hx/create_product", poem::post(create_product))
         .at("/hx/delete_order", poem::delete(delete_order))
         .with(AddData::new(pool));
