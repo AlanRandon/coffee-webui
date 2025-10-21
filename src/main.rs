@@ -1,6 +1,6 @@
 use askama::Template;
 use poem::{EndpointExt, http::StatusCode, middleware::AddData};
-use serde::Deserialize;
+use serde::{Deserialize, de};
 use sqlx::{SqlitePool, types::chrono};
 use std::sync::Arc;
 
@@ -126,7 +126,36 @@ async fn delete_order(
 #[derive(Deserialize)]
 struct CreateProductRequest {
     name: String,
-    price: f32,
+    #[serde(deserialize_with = "deserialize_price")]
+    price: u16,
+}
+
+fn deserialize_price<'de, D>(deserializer: D) -> Result<u16, D::Error>
+where
+    D: de::Deserializer<'de>,
+{
+    let price = String::deserialize(deserializer)?;
+    if let Some((whole, fraction)) = price.split_once('.') {
+        let whole = whole.parse::<u16>().map_err(de::Error::custom)?;
+        let fraction = match fraction.len() {
+            1 => 10,
+            2 => 1,
+            _ => return Err(de::Error::custom("invalid price fraction")),
+        } * fraction.parse::<u16>().map_err(de::Error::custom)?;
+
+        return whole
+            .checked_mul(100)
+            .and_then(|price| price.checked_add(fraction))
+            .ok_or_else(|| de::Error::custom("price too large"));
+    }
+
+    price.parse::<u16>().map_err(de::Error::custom)
+}
+
+#[derive(Template)]
+#[template(path = "index.html", block = "product_list")]
+struct ProductList {
+    products: Vec<Product>,
 }
 
 #[poem::handler]
@@ -147,13 +176,16 @@ async fn create_product(
             .body(());
     };
 
-    let Ok(orders) = get_orders(&pool).await else {
+    let Ok(products) = sqlx::query_as!(Product, "SELECT id, name FROM product")
+        .fetch_all(pool.as_ref())
+        .await
+    else {
         return poem::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(());
     };
 
-    response(OrderTable { orders }, StatusCode::OK)
+    response(ProductList { products }, StatusCode::OK)
 }
 
 #[tokio::main]
