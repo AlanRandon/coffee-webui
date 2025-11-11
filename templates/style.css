@@ -14,3 +14,7 @@
 body {
   @apply min-h-full grid bg-wps-purple text-gray-50;
 }
+
+button {
+  @apply cursor-pointer;
+}

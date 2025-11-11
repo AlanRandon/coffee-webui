@@ -241,5 +241,6 @@ async fn main() -> anyhow::Result<()> {
         .with(AddData::new(pool));
 
     let listener = poem::listener::TcpListener::bind("127.0.0.1:8000");
+    println!("listening on http://localhost:8000");
     Ok(poem::Server::new(listener).run(app).await?)
 }
