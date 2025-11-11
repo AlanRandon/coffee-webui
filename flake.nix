@@ -41,6 +41,7 @@
               pkgs.sqlx-cli
               pkgs.sqlite
               pkgs.djlint
+              pkgs.nodejs
             ];
 
             DATABASE_URL = "sqlite:dev.db";
