@@ -24,6 +24,7 @@ struct Product {
 struct OrderRow {
     id: i64,
     created: chrono::NaiveDateTime,
+    price: i64,
     product_name: String,
 }
 
@@ -41,7 +42,7 @@ struct Index {
 async fn get_orders(pool: &SqlitePool) -> Result<Vec<OrderRow>, impl std::error::Error> {
     sqlx::query_as!(
         OrderRow,
-        "SELECT coffee_order.id as id, created, product.name as product_name FROM coffee_order INNER JOIN product ON coffee_order.product = product.id ORDER BY created DESC"
+        "SELECT coffee_order.id as id, created, product.name as product_name, price FROM coffee_order INNER JOIN product ON coffee_order.product = product.id ORDER BY created DESC"
     )
     .fetch_all(pool)
     .await
@@ -157,6 +158,34 @@ async fn delete_product(
 }
 
 #[derive(Deserialize)]
+struct UpdatePriceRequest {
+    product: i64,
+    #[serde(deserialize_with = "deserialize_price")]
+    price: u16,
+}
+
+#[poem::handler]
+async fn update_price(
+    pool: poem::web::Data<&Arc<SqlitePool>>,
+    form: poem::web::Form<UpdatePriceRequest>,
+) -> poem::Response {
+    dbg!();
+    let Ok(_) = sqlx::query!(
+        "UPDATE product SET current_price = (?) WHERE id = (?)",
+        form.price,
+        form.product
+    )
+    .execute(pool.as_ref())
+    .await
+    else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+
+    poem::Response::builder().status(StatusCode::OK).body(())
+}
+#[derive(Deserialize)]
 struct CreateProductRequest {
     name: String,
     #[serde(deserialize_with = "deserialize_price")]
@@ -238,6 +267,7 @@ async fn main() -> anyhow::Result<()> {
         .at("/hx/delete_product", poem::delete(delete_product))
         .at("/hx/create_product", poem::post(create_product))
         .at("/hx/delete_order", poem::delete(delete_order))
+        .at("/hx/update_price", poem::post(update_price))
         .with(AddData::new(pool));
 
     let listener = poem::listener::TcpListener::bind("127.0.0.1:8000");
