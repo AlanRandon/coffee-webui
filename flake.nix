@@ -35,7 +35,6 @@
 
             packages = [
               rust.rust-analyzer
-              pkgs.cargo-shuttle
               pkgs.tailwindcss_4
               pkgs.esbuild
               pkgs.sqlx-cli
