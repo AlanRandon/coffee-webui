@@ -1,37 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-    <dialog>
-        <h2>Edit Product</h2>
-        <form class="border grid"
-              hx-post="/hx/create_product"
-              hx-target="#product_list"
-              hx-swap="outerHTML"
-              hx-on::after-request="if (event.detail.successful) { this.reset() }">
-            <label for="edit-product-name">Product Name</label>
-            <input type="text"
-                   name="name"
-                   id="edit-product-name"
-                   placeholder="Pumpkin Spice Latte">
-            <label for="price">Price</label>
-            <div class="flex flex-row">
-                £
-                <input name="price" type="number" placeholder="0.67" min="0" step="0.01">
-            </div>
-            <button type="submit" class="btn">
-                <p>New Product</p>
-                <span class="material-symbols-rounded w-1/2">add_circle</span>
-            </button>
-        </form>
-    </dialog>
-    <main class="p-4 min-h-fullflex flex-col gap-4">
+    <main class="p-4 min-h-full flex flex-col gap-4">
         <h1 class="text-2xl font-bold">Coffee Machine Order Logger</h1>
-        <!-- TODO: add confimation popup -->
         <div class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2 grid gap-4 p-4">
             <h2 class="font-bold">Order</h2>
             {% block product_list %}
                 <div id="product_list" class="grid grid-cols-3 gap-4">
                     {% for product in products %}
-                        <div class="grid items-center gap-4 product-row bg-gray-300 rounded border-4 text-white border-gray-200 has-[input:checked]:border-wps-purple relative bg-[linear-gradient(#0005,#0005),url('https://indiehoy.com/wp-content/uploads/2019/09/CupcakKe.jpg')] bg-cover">
+                        <div class="grid items-center gap-4 product-row bg-gray-300 rounded border-2 text-white border-gray-200 has-[input:checked]:border-wps-purple relative bg-[linear-gradient(#0005,#0005),url('https://indiehoy.com/wp-content/uploads/2019/09/CupcakKe.jpg')] bg-cover">
                             <input type="radio"
                                    name="product"
                                    value="{{ product.id }}"
@@ -69,11 +45,11 @@
                             {% endif %}
                         </div>
                     {% endfor %}
-                    <div>
-                        <button class="btn"
-                                hx-on:click="document.getElementById('create-product-popup').show()">
+                    <div class="grid place-items-center place-content-center gap-2">
+                        <div class="material-symbols-rounded text-center w-full text-6xl!">add_circle</div>
+                        <button hx-on:click="document.getElementById('create-product-popup').showModal()"
+                                class="btn">
                             <p>Create New Product</p>
-                            <span class="material-symbols-rounded w-1/2">add_circle</span>
                         </button>
                     </div>
                 </div>
@@ -106,22 +82,64 @@
             </tbody>
         </table>
     </main>
-    <dialog id="create-product-popup">
-        <h2>Create Product</h2>
+    <dialog class="edit-product-popup">
+        <h2>Edit Product</h2>
         <form class="border grid"
               hx-post="/hx/create_product"
               hx-target="#product_list"
               hx-swap="outerHTML"
               hx-on::after-request="if (event.detail.successful) { this.reset() }">
-            <label for="new-product-name">Product Name</label>
+            <label for="edit-product-name">Product Name</label>
             <input type="text"
                    name="name"
-                   id="new-product-name"
+                   id="edit-product-name"
                    placeholder="Pumpkin Spice Latte">
             <label for="price">Price</label>
             <div class="flex flex-row">
                 £
                 <input name="price" type="number" placeholder="0.67" min="0" step="0.01">
+            </div>
+            <button type="submit" class="btn">
+                <p>New Product</p>
+                <span class="material-symbols-rounded w-1/2">add_circle</span>
+            </button>
+        </form>
+    </dialog>
+    <dialog id="create-product-popup"
+            class="backdrop:bg-gray-900/70 backdrop:backdrop-blur-md m-auto bg-gray-200 border-2 border-gray-900 p-4 rounded">
+        <h2 class="font-bold">Create Product</h2>
+        <form class="grid gap-2"
+              hx-post="/hx/create_product"
+              hx-target="#product_list"
+              hx-swap="outerHTML"
+              hx-on::after-request="if (event.detail.successful) { this.reset(); this.parentElement.close() }">
+            <label for="new-product-name">Product Name</label>
+            <input type="text"
+                   name="name"
+                   id="new-product-name"
+                   placeholder="Pumpkin Spice Latte"
+                   required>
+            <label for="price">Price</label>
+            <div class="flex flex-row">
+                £
+                <input name="price"
+                       type="number"
+                       placeholder="0.67"
+                       min="0"
+                       step="0.01"
+                       required>
+            </div>
+            <div class="flex justify-center gap-4">
+                <button hx-on:click='document.getElementById("create-product-popup").close()'
+                        type="button"
+                        class="btn flex gap-2 items-center">
+                    Cancel
+                    <span class="material-symbols-rounded w-1/2">cancel</span>
+                </button>
+                <button type="submit" class="btn flex gap-2 items-center">
+                    Create
+                    <span class="material-symbols-rounded w-1/2">add_circle</span>
+                </button>
             </div>
         </form>
     </dialog>
