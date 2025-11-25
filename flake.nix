@@ -41,7 +41,7 @@
               pkgs.sqlite
               pkgs.djlint
               pkgs.nodejs
-              pkgs.picocom
+              pkgs.tio
             ];
 
             DATABASE_URL = "sqlite:dev.db";
