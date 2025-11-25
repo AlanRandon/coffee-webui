@@ -7,33 +7,29 @@
             {% block product_list %}
                 <div id="product_list" class="grid grid-cols-3 gap-4">
                     {% for product in products %}
-                        <div class="grid items-center gap-4 product-row bg-gray-300 rounded border-2 text-white border-gray-200 has-[input:checked]:border-wps-purple relative bg-[linear-gradient(#0005,#0005),url('https://indiehoy.com/wp-content/uploads/2019/09/CupcakKe.jpg')] bg-cover">
-                            <input type="radio"
-                                   name="product"
-                                   value="{{ product.id }}"
-                                   id="product-{{ product.id }}"
-                                   class="cursor-pointer appearance-none"
-                                   required />
+                        <div class="grid items-center gap-4 product-row bg-gray-300 rounded border-2 text-white border-gray-200 has-[input:checked]:border-wps-purple relative bg-[linear-gradient(#0005,#0005),url('https://indiehoy.com/wp-content/uploads/2019/09/CupcakKe.jpg')] bg-cover"
+                             data-product
+                             data-product-name="{{ product.name }}"
+                             data-product-id="{{ product.id }}"
+                             data-product-price="{{ format!("{:.2}", product.current_price as f32 / 100.0) }}">
                             <p>{{ product.name }}</p>
-                            <span>
-                                £
-                                <input type="number"
-                                       step="0.01"
-                                       min="0"
-                                       placeholder="0.67"
-                                       value="{{ format!("{:.2}", product.current_price as f32 / 100.0) }}"
-                                       hx-trigger="change"
-                                       hx-post="/hx/update_price"
-                                       hx-vals='js:{product: {{ product.id }}, price: this.value}' />
-                            </span>
+                            <span>£{{ format!("{:.2}", product.current_price as f32 / 100.0) }}</span>
                             <p>{{ product.order_count }} orders</p>
-                            <button hx-post="/hx/create_order"
-                                    hx-target="main"
-                                    hx-swap="morph:outerHTML"
-                                    hx-vals='{"product":{{ product.id }}}'>
-                                Create Order
-                                <span class="material-symbols-rounded w-1/2">add_circle</span>
-                            </button>
+                            <div class="p-2 flex items-center justify-center gap-4">
+                                <button class="btn flex items-center gap-2"
+                                        hx-on:click='copyProductInfoToEditPopup(this.closest("[data-product]"))'>
+                                    Edit
+                                    <span class="material-symbols-rounded w-1/2">edit</span>
+                                </button>
+                                <button hx-post="/hx/create_order"
+                                        hx-target="main"
+                                        hx-swap="morph:outerHTML"
+                                        hx-vals='{"product":{{ product.id }}}'
+                                        class="btn flex items-center gap-2">
+                                    Create&nbsp;Order
+                                    <span class="material-symbols-rounded w-1/2">add_circle</span>
+                                </button>
+                            </div>
                             {% if product.order_count < 1 %}
                                 <button hx-delete="/hx/delete_product"
                                         hx-target="closest .product-row"
@@ -82,27 +78,43 @@
             </tbody>
         </table>
     </main>
-    <dialog class="edit-product-popup">
-        <h2>Edit Product</h2>
-        <form class="border grid"
-              hx-post="/hx/create_product"
-              hx-target="#product_list"
-              hx-swap="outerHTML"
-              hx-on::after-request="if (event.detail.successful) { this.reset() }">
+    <dialog id="edit-product-popup"
+            class="backdrop:bg-gray-900/70 backdrop:backdrop-blur-md m-auto bg-gray-200 border-2 border-gray-900 p-4 rounded">
+        <h2 class="font-bold">Edit Product</h2>
+        <form class="grid gap-2"
+              hx-post="/hx/update_product"
+              hx-target="main"
+              hx-swap="morph:outerHTML"
+              hx-on::after-request="if (event.detail.successful) { this.reset(); this.parentElement.close() }">
+            <input type="hidden" id="edit-product-id" name="product" data-product-id>
             <label for="edit-product-name">Product Name</label>
             <input type="text"
                    name="name"
                    id="edit-product-name"
-                   placeholder="Pumpkin Spice Latte">
+                   placeholder="Pumpkin Spice Latte"
+                   data-product-name>
             <label for="price">Price</label>
             <div class="flex flex-row">
                 £
-                <input name="price" type="number" placeholder="0.67" min="0" step="0.01">
+                <input name="price"
+                       type="number"
+                       placeholder="0.67"
+                       min="0"
+                       step="0.01"
+                       data-product-price>
             </div>
-            <button type="submit" class="btn">
-                <p>New Product</p>
-                <span class="material-symbols-rounded w-1/2">add_circle</span>
-            </button>
+            <div class="flex justify-center gap-4">
+                <button hx-on:click='document.getElementById("edit-product-popup").close()'
+                        type="button"
+                        class="btn flex gap-2 items-center">
+                    Cancel
+                    <span class="material-symbols-rounded w-1/2">cancel</span>
+                </button>
+                <button type="submit" class="btn flex gap-2 items-center">
+                    Edit
+                    <span class="material-symbols-rounded w-1/2">edit</span>
+                </button>
+            </div>
         </form>
     </dialog>
     <dialog id="create-product-popup"

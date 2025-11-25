@@ -165,11 +165,10 @@ struct UpdatePriceRequest {
 }
 
 #[poem::handler]
-async fn update_price(
+async fn update_product(
     pool: poem::web::Data<&Arc<SqlitePool>>,
     form: poem::web::Form<UpdatePriceRequest>,
 ) -> poem::Response {
-    dbg!();
     let Ok(_) = sqlx::query!(
         "UPDATE product SET current_price = (?) WHERE id = (?)",
         form.price,
@@ -183,7 +182,13 @@ async fn update_price(
             .body(());
     };
 
-    poem::Response::builder().status(StatusCode::OK).body(())
+    let (Ok(orders), Ok(products)) = (get_orders(&pool).await, get_products(&pool).await) else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+
+    response(IndexBody { orders, products }, StatusCode::OK)
 }
 #[derive(Deserialize)]
 struct CreateProductRequest {
@@ -267,7 +272,7 @@ async fn main() -> anyhow::Result<()> {
         .at("/hx/delete_product", poem::delete(delete_product))
         .at("/hx/create_product", poem::post(create_product))
         .at("/hx/delete_order", poem::delete(delete_order))
-        .at("/hx/update_price", poem::post(update_price))
+        .at("/hx/update_product", poem::post(update_product))
         .with(AddData::new(pool));
 
     let listener = poem::listener::TcpListener::bind("127.0.0.1:8000");
