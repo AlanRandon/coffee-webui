@@ -18,3 +18,7 @@ body {
 button {
   @apply cursor-pointer;
 }
+
+@utility popup {
+  @apply backdrop:bg-gray-900/70 backdrop:backdrop-blur-md m-auto bg-gray-200 border-2 border-gray-900 p-4 rounded transition-all starting:opacity-0 starting:-translate-y-48;
+}
