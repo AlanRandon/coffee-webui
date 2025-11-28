@@ -6,7 +6,10 @@ use std::sync::Arc;
 
 fn response(template: impl Template, status: StatusCode) -> poem::Response {
     match template.render() {
-        Ok(body) => poem::Response::builder().status(status).body(body),
+        Ok(body) => poem::Response::builder()
+            .status(status)
+            .body(body)
+            .set_content_type("text/html"),
         Err(_) => poem::Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
             .body(()),

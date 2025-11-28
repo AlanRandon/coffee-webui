@@ -12,7 +12,7 @@
 
 :root,
 body {
-  @apply min-h-full grid bg-wps-purple text-gray-50;
+  @apply min-h-full grid bg-wps-purple;
 }
 
 button {
