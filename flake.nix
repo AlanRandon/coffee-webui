@@ -35,6 +35,7 @@
               toolchain
               # fast linker
               pkgs.mold
+              pkgs.clang
             ];
 
             packages = [
