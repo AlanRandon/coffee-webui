@@ -1,186 +1,190 @@
 {% extends "base.html" %}
 {% block content %}
-    <main class="p-4 min-h-full flex flex-col gap-4 text-gray-900">
-        <h1 class="text-2xl font-bold text-gray-50">Coffee Machine Order Logger</h1>
-        <div class="text-gray-900 overflow-hidden grid gap-4">
-            {% block product_list %}
-                <div id="product_list" class="grid grid-cols-3 gap-4">
-                    {% for product in products %}
-                        <div class="flex flex-col justify-between gap-4 product-row bg-gray-200 rounded border-2 border-gray-900"
-                             data-product
-                             data-product-name="{{ product.name }}"
-                             data-product-id="{{ product.id }}"
-                             data-product-price="{{ format!("{:.2}", product.current_price as f32 / 100.0) }}">
-                            <div>
-                                <div class="bg-[oklch(62.3%_0.214_var(--hue,0))] grid place-items-center text-xl h-16 text-gray-50 font-bold"
-                                     style="--hue:{# TODO #}{{ product.id * 60 }}">
-                                    <p class="text-center">{{ product.name }}</p>
-                                </div>
-                                <div class="p-2 relative grid gap-4">
-                                    <div>
-                                        <span>£{{ format!("{:.2}", product.current_price as f32 / 100.0) }}</span>
-                                        <p>{{ product.order_count }} orders</p>
+    {% block content_no_dialogs %}
+        <main class="p-4 min-h-full flex flex-col gap-4 text-gray-900">
+            <h1 class="text-2xl font-bold text-gray-50">Coffee Machine Order Logger</h1>
+            <div class="text-gray-900 overflow-hidden grid gap-4">
+                {% block product_list %}
+                    <div id="product_list" class="grid grid-cols-3 gap-4">
+                        {% for product in products %}
+                            <div class="flex flex-col justify-between gap-4 product-row bg-gray-200 rounded border-2 border-gray-900"
+                                 data-product
+                                 data-product-name="{{ product.name }}"
+                                 data-product-id="{{ product.id }}"
+                                 data-product-price="{{ format!("{:.2}", product.current_price as f32 / 100.0) }}"
+                                 id="product-{{ product.id }}">
+                                <div>
+                                    <div class="bg-[oklch(62.3%_0.214_var(--hue,0))] grid place-items-center text-xl h-16 text-gray-50 font-bold"
+                                         style="--hue:{# TODO #}{{ product.id * 60 }}">
+                                        <p class="text-center">{{ product.name }}</p>
                                     </div>
-                                    <div class="flex absolute top-0 right-0 p-2 gap-1">
-                                        <button hx-on:click='copyProductInfoToEditPopup(this.closest("[data-product]"))'
-                                                class="btn p-1 grid place-items-center">
-                                            <span class="material-symbols-rounded">edit</span>
-                                        </button>
-                                        {% if product.order_count < 1 %}
-                                            <button hx-delete="/hx/delete_product"
-                                                    hx-target="closest .product-row"
-                                                    hx-swap="outerHTML"
-                                                    hx-vals='{"id":{{ product.id }}}'
+                                    <div class="p-2 relative grid gap-4">
+                                        <div>
+                                            <span>£{{ format!("{:.2}", product.current_price as f32 / 100.0) }}</span>
+                                            <p>{{ product.order_count }} orders</p>
+                                        </div>
+                                        <div class="flex absolute top-0 right-0 p-2 gap-1">
+                                            <button hx-on:click='copyProductInfoToEditPopup(this.closest("[data-product]"))'
                                                     class="btn p-1 grid place-items-center">
-                                                <span class="material-symbols-rounded">delete</span>
+                                                <span class="material-symbols-rounded">edit</span>
                                             </button>
-                                        {% else %}
-                                            <button class="btn p-1 grid place-items-center pointer-events-none opacity-40"
-                                                    disabled>
-                                                <span class="material-symbols-rounded">delete</span>
-                                            </button>
-                                        {% endif %}
+                                            {% if product.order_count < 1 %}
+                                                <button hx-delete="/hx/delete_product"
+                                                        hx-target="closest .product-row"
+                                                        hx-swap="outerHTML"
+                                                        hx-vals='{"id":{{ product.id }}}'
+                                                        class="btn p-1 grid place-items-center">
+                                                    <span class="material-symbols-rounded">delete</span>
+                                                </button>
+                                            {% else %}
+                                                <button class="btn p-1 grid place-items-center pointer-events-none opacity-40"
+                                                        disabled>
+                                                    <span class="material-symbols-rounded">delete</span>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                        <button hx-post="/hx/create_order"
+                                                hx-target="main"
+                                                hx-swap="morph:outerHTML"
+                                                hx-vals='{"product":{{ product.id }}}'
+                                                class="btn flex items-center justify-between gap-2 w-full">
+                                            <span>New&nbsp;Order</span>
+                                            <span class="material-symbols-rounded">add_circle</span>
+                                        </button>
                                     </div>
-                                    <button hx-post="/hx/create_order"
-                                            hx-target="main"
-                                            hx-swap="morph:outerHTML"
-                                            hx-vals='{"product":{{ product.id }}}'
-                                            class="btn flex items-center justify-between gap-2 w-full">
-                                        <span>New&nbsp;Order</span>
-                                        <span class="material-symbols-rounded">add_circle</span>
-                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    {% endfor %}
-                    <button class="grid place-items-center place-content-center gap-2 bg-gray-200 border-2 border-gray-900 p-2"
-                            hx-on:click="document.getElementById('create-product-popup').showModal()">
-                        <div class="material-symbols-rounded text-center w-full text-6xl!">add_circle</div>
-                        <p>Create Product</p>
-                    </button>
-                </div>
-            {% endblock %}
-        </div>
-        <table class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2">
-            <thead>
-                <tr>
-                    <th class="p-2 text-left">Product Name</th>
-                    <th class="p-2 text-left">Price</th>
-                    <th class="p-2 text-left">Time Created</th>
-                    <!-- <th class="p-2">Actions</th> -->
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in orders %}
-                    <tr class="odd:bg-gray-400 p-2 border-t-2 border-gray-900 rounded-sm">
-                        <td class="p-2">{{ order.product_name }}</td>
-                        <td class="p-2">{{ format!("£{:.2}", order.price as f32 / 100.0) }}</td>
-                        <td class="p-2">{{ order.created.to_string() }}</td>
-                        <td class="p-2 flex gap-4 justify-end">
-                            <button hx-delete="/hx/delete_order"
-                                    hx-target="main"
-                                    hx-swap="morph:outerHTML"
-                                    hx-vals='{"id":{{ order.id }}}'
-                                    class="btn">Remove</button>
-                        </td>
+                        {% endfor %}
+                        <button class="grid place-items-center place-content-center gap-2 bg-gray-200 border-2 border-gray-900 p-2"
+                                hx-on:click="document.getElementById('create-product-popup').showModal()">
+                            <div class="material-symbols-rounded text-center w-full text-6xl!">add_circle</div>
+                            <p>Create Product</p>
+                        </button>
+                    </div>
+                {% endblock %}
+            </div>
+            <table class="bg-gray-200 text-gray-900 rounded-sm overflow-hidden border-gray-900 border-2">
+                <thead>
+                    <tr>
+                        <th class="p-2 text-left">Product Name</th>
+                        <th class="p-2 text-left">Price</th>
+                        <th class="p-2 text-left">Time Created</th>
+                        <!-- <th class="p-2">Actions</th> -->
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </main>
-{% endblock %}
-<dialog id="edit-product-popup" class="popup">
-    <h2 class="font-bold">Edit Product</h2>
-    <form class="grid gap-2"
-          hx-post="/hx/update_product"
-          hx-target="main"
-          hx-swap="morph:outerHTML"
-          hx-on::after-request="if (event.detail.successful) { this.reset(); this.closest('dialog').close() } else { document.getElementById('edit-product-error-popup').showModal() }">
-        <input type="hidden" id="edit-product-id" name="product" data-product-id>
-        <label for="edit-product-name">Product Name</label>
-        <input type="text"
-               name="name"
-               id="edit-product-name"
-               placeholder="Pumpkin Spice Latte"
-               data-product-name>
-        <label for="price">Price</label>
-        <div class="flex flex-row">
-            £
-            <input name="price"
-                   type="number"
-                   placeholder="0.67"
-                   min="0"
-                   step="0.01"
-                   data-product-price>
-        </div>
-        <div class="flex justify-center gap-4">
-            <button hx-on:click='this.closest("dialog").close()'
-                    type="button"
-                    class="btn flex gap-2 items-center">
-                Cancel
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr class="odd:bg-gray-400 p-2 border-t-2 border-gray-900 rounded-sm"
+                            id="order-{{ order.id }}">
+                            <td class="p-2">{{ order.product_name }}</td>
+                            <td class="p-2">{{ format!("£{:.2}", order.price as f32 / 100.0) }}</td>
+                            <td class="p-2">{{ order.created.to_string() }}</td>
+                            <td class="p-2 flex gap-4 justify-end">
+                                <button hx-delete="/hx/delete_order"
+                                        hx-target="main"
+                                        hx-swap="morph:outerHTML"
+                                        hx-vals='{"id":{{ order.id }}}'
+                                        class="btn">Remove</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </main>
+    {% endblock %}
+    <dialog id="edit-product-popup" class="popup">
+        <h2 class="font-bold">Edit Product</h2>
+        <form class="grid gap-2"
+              hx-post="/hx/update_product"
+              hx-target="main"
+              hx-swap="morph:outerHTML"
+              hx-on::after-request="if (event.detail.successful) { this.reset(); this.closest('dialog').close() } else { document.getElementById('edit-product-error-popup').showModal() }">
+            <input type="hidden" id="edit-product-id" name="product" data-product-id>
+            <label for="edit-product-name">Product Name</label>
+            <input type="text"
+                   name="name"
+                   id="edit-product-name"
+                   placeholder="Pumpkin Spice Latte"
+                   data-product-name>
+            <label for="price">Price</label>
+            <div class="flex flex-row">
+                £
+                <input name="price"
+                       type="number"
+                       placeholder="0.67"
+                       min="0"
+                       step="0.01"
+                       data-product-price>
+            </div>
+            <div class="flex justify-center gap-4">
+                <button hx-on:click='this.closest("dialog").close()'
+                        type="button"
+                        class="btn flex gap-2 items-center">
+                    Cancel
+                    <span class="material-symbols-rounded">cancel</span>
+                </button>
+                <button type="submit" class="btn flex gap-2 items-center">
+                    Edit
+                    <span class="material-symbols-rounded">edit</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="edit-product-error-popup" class="popup">
+        <div class="grid place-items-center">
+            Error Editing Product
+            <button class="btn flex gap-2 items-center"
+                    hx-on:click="this.closest('dialog').close()">
+                Close
                 <span class="material-symbols-rounded">cancel</span>
             </button>
-            <button type="submit" class="btn flex gap-2 items-center">
-                Edit
-                <span class="material-symbols-rounded">edit</span>
-            </button>
         </div>
-    </form>
-</dialog>
-<dialog id="edit-product-error-popup" class="popup">
-    <div class="grid place-items-center">
-        Error Editing Product
-        <button class="btn flex gap-2 items-center"
-                hx-on:click="this.closest('dialog').close()">
-            Close
-            <span class="material-symbols-rounded">cancel</span>
-        </button>
-    </div>
-</dialog>
-<dialog id="create-product-popup" class="popup">
-    <h2 class="font-bold">Create Product</h2>
-    <form class="grid gap-2"
-          hx-post="/hx/create_product"
-          hx-target="#product_list"
-          hx-swap="outerHTML"
-          hx-on::after-request="if (event.detail.successful) { this.reset(); this.closest('dialog').close(); console.log('hello!') } else { document.getElementById('create-product-error-popup').showModal() }">
-        <label for="new-product-name">Product Name</label>
-        <input type="text"
-               name="name"
-               id="new-product-name"
-               placeholder="Pumpkin Spice Latte"
-               required>
-        <label for="price">Price</label>
-        <div class="flex flex-row">
-            £
-            <input name="price"
-                   type="number"
-                   placeholder="0.67"
-                   min="0"
-                   step="0.01"
+    </dialog>
+    <dialog id="create-product-popup" class="popup">
+        <h2 class="font-bold">Create Product</h2>
+        <form class="grid gap-2"
+              hx-post="/hx/create_product"
+              hx-target="#product_list"
+              hx-swap="outerHTML"
+              hx-on::after-request="if (event.detail.successful) { this.reset(); this.closest('dialog').close(); console.log('hello!') } else { document.getElementById('create-product-error-popup').showModal() }">
+            <label for="new-product-name">Product Name</label>
+            <input type="text"
+                   name="name"
+                   id="new-product-name"
+                   placeholder="Pumpkin Spice Latte"
                    required>
-        </div>
-        <div class="flex justify-center gap-4">
-            <button hx-on:click='this.closest("dialog").close()'
-                    type="button"
-                    class="btn flex gap-2 items-center">
-                Cancel
+            <label for="price">Price</label>
+            <div class="flex flex-row">
+                £
+                <input name="price"
+                       type="number"
+                       placeholder="0.67"
+                       min="0"
+                       step="0.01"
+                       required>
+            </div>
+            <div class="flex justify-center gap-4">
+                <button hx-on:click='this.closest("dialog").close()'
+                        type="button"
+                        class="btn flex gap-2 items-center">
+                    Cancel
+                    <span class="material-symbols-rounded">cancel</span>
+                </button>
+                <button type="submit" class="btn flex gap-2 items-center">
+                    Create
+                    <span class="material-symbols-rounded">add_circle</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="create-product-error-popup" class="popup">
+        <div class="grid place-items-center">
+            Error Creating Product
+            <button class="btn flex gap-2 items-center"
+                    hx-on:click="this.closest('dialog').close()">
+                Close
                 <span class="material-symbols-rounded">cancel</span>
             </button>
-            <button type="submit" class="btn flex gap-2 items-center">
-                Create
-                <span class="material-symbols-rounded">add_circle</span>
-            </button>
         </div>
-    </form>
-</dialog>
-<dialog id="create-product-error-popup" class="popup">
-    <div class="grid place-items-center">
-        Error Creating Product
-        <button class="btn flex gap-2 items-center"
-                hx-on:click="this.closest('dialog').close()">
-            Close
-            <span class="material-symbols-rounded">cancel</span>
-        </button>
-    </div>
-</dialog>
+    </dialog>
+{% endblock %}

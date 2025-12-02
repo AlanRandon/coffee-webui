@@ -72,7 +72,7 @@ async fn index(pool: poem::web::Data<&Arc<SqlitePool>>) -> poem::Response {
 }
 
 #[derive(Template)]
-#[template(path = "index.html", block = "content")]
+#[template(path = "index.html", block = "content_no_dialogs")]
 struct IndexBody {
     orders: Vec<OrderRow>,
     products: Vec<Product>,
@@ -279,6 +279,7 @@ async fn main() -> anyhow::Result<()> {
         .at("/hx/create_product", poem::post(create_product))
         .at("/hx/delete_order", poem::delete(delete_order))
         .at("/hx/update_product", poem::post(update_product))
+        .catch_error(async |_: poem::error::NotFoundError| response(Error, StatusCode::NOT_FOUND))
         .with(AddData::new(pool));
 
     let listener = poem::listener::TcpListener::bind("127.0.0.1:8000");
