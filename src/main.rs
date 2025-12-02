@@ -161,20 +161,22 @@ async fn delete_product(
 }
 
 #[derive(Deserialize)]
-struct UpdatePriceRequest {
+struct UpdateProductRequest {
     product: i64,
     #[serde(deserialize_with = "deserialize_price")]
     price: u16,
+    name: String,
 }
 
 #[poem::handler]
 async fn update_product(
     pool: poem::web::Data<&Arc<SqlitePool>>,
-    form: poem::web::Form<UpdatePriceRequest>,
+    form: poem::web::Form<UpdateProductRequest>,
 ) -> poem::Response {
     let Ok(_) = sqlx::query!(
-        "UPDATE product SET current_price = (?) WHERE id = (?)",
+        "UPDATE product SET current_price = (?), name = (?) WHERE id = (?)",
         form.price,
+        form.name,
         form.product
     )
     .execute(pool.as_ref())
@@ -193,6 +195,7 @@ async fn update_product(
 
     response(IndexBody { orders, products }, StatusCode::OK)
 }
+
 #[derive(Deserialize)]
 struct CreateProductRequest {
     name: String,

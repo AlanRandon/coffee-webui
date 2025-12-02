@@ -17,3 +17,7 @@ function copyProductInfoToEditPopup(productCard: HTMLElement) {
 }
 
 (window as any).copyProductInfoToEditPopup = copyProductInfoToEditPopup;
+
+for (const btn of document.getElementsByTagName("button")) {
+  btn.addEventListener("click", (_) => btn.blur());
+}
