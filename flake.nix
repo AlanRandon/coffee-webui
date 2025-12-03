@@ -23,6 +23,7 @@
             combine [
               stable.toolchain
               targets."aarch64-unknown-linux-gnu".stable.rust-std
+              targets."aarch64-unknown-linux-musl".stable.rust-std
             ];
         in
         {
@@ -36,6 +37,8 @@
               # fast linker
               pkgs.mold
               pkgs.clang
+              pkgs.zig
+              pkgs.cargo-zigbuild
             ];
 
             packages = [
