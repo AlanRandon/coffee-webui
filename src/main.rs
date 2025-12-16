@@ -1,8 +1,9 @@
 use askama::Template;
+use itertools::Itertools;
 use poem::{EndpointExt, http::StatusCode, middleware::AddData};
 use serde::{Deserialize, de};
 use sqlx::{SqlitePool, types::chrono};
-use std::sync::Arc;
+use std::{iter, sync::Arc};
 
 fn response(template: impl Template, status: StatusCode) -> poem::Response {
     match template.render() {
@@ -265,6 +266,39 @@ async fn create_product(
     response(ProductList { products }, StatusCode::OK)
 }
 
+#[poem::handler]
+async fn get_csv(pool: poem::web::Data<&Arc<SqlitePool>>) -> poem::Response {
+    let Ok(rows) = sqlx::query!(
+        "SELECT created, price, product.name AS product_name FROM coffee_order INNER JOIN product ON coffee_order.product = product.id"
+    ).fetch_all(pool.as_ref()).await else {
+        return poem::Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(());
+    };
+    let body = iter::once("created,price,product_name".to_string())
+        .chain(rows.into_iter().map(|row| {
+            format!(
+                "{},{:.2},\"{}\"",
+                row.created,
+                row.price as f32 / 100.0,
+                row.product_name
+            )
+        }))
+        .join("\n");
+    poem::Response::builder()
+        .body(body)
+        .set_content_type("text/csv")
+}
+
+#[poem::handler]
+async fn get_icon_font() -> poem::Response {
+    poem::Response::builder()
+        .body(poem::Body::from_bytes(bytes::Bytes::from_static(
+            include_bytes!("../assets/icons.ttf"),
+        )))
+        .set_content_type("font/ttf")
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let database_url = std::env::var("DATABASE_URL")?;
@@ -274,11 +308,13 @@ async fn main() -> anyhow::Result<()> {
 
     let app = poem::Route::new()
         .at("/", poem::get(index))
+        .at("/get_csv", poem::get(get_csv))
         .at("/hx/create_order", poem::post(create_order))
         .at("/hx/delete_product", poem::delete(delete_product))
         .at("/hx/create_product", poem::post(create_product))
         .at("/hx/delete_order", poem::delete(delete_order))
         .at("/hx/update_product", poem::post(update_product))
+        .at("/icons.ttf", poem::get(get_icon_font))
         .catch_error(async |_: poem::error::NotFoundError| response(Error, StatusCode::NOT_FOUND))
         .with(AddData::new(pool));
 

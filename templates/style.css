@@ -10,6 +10,27 @@
   @apply bg-wps-purple text-white hover:opacity-80 focus:opacity-100 focus:bg-wps-purple-800 focus:scale-90 font-bold rounded-sm px-4 py-2 transition-all;
 }
 
+@font-face {
+  font-family: "Material Symbols Rounded";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/icons.ttf") format("truetype");
+}
+
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+}
+
 :root,
 body {
   @apply min-h-full grid bg-wps-purple;

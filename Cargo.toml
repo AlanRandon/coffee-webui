@@ -10,3 +10,5 @@ tokio = { version = "1.47.1", features = ["full"] }
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono"] }
 anyhow = "1.0.100"
 serde = { version = "1.0.226", features = ["serde_derive"] }
+itertools = "0.14.0"
+bytes = "1.11.0"
